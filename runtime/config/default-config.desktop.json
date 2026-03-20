@@ -1,0 +1,78 @@
+{
+  "default_temperature": 0.5,
+  "models": {
+    "providers": {
+      "openrouter": {
+        "api_key": ""
+      },
+      "openai": {
+        "api_key": ""
+      },
+      "ollama": {
+        "base_url": "http://127.0.0.1:11434/v1"
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/anthropic/claude-sonnet-4"
+      }
+    },
+    "list": [
+      {
+        "name": "assistant-cn",
+        "provider": "openrouter",
+        "model": "anthropic/claude-sonnet-4",
+        "system_prompt": "Prefer Simplified Chinese. Explain risks clearly, then continue after explicit user approval."
+      },
+      {
+        "name": "orchestrator",
+        "provider": "openai",
+        "model": "gpt-5",
+        "system_prompt": "Coordinate specialist agents, summarize progress, and keep the user in control."
+      },
+      {
+        "name": "coder",
+        "provider": "ollama",
+        "model": "qwen3.5-coder",
+        "system_prompt": "Focus on implementation details, code quality, and actionable debugging steps."
+      }
+    ]
+  },
+  "channels": {
+    "web": {
+      "accounts": {
+        "default": {
+          "listen": "127.0.0.1",
+          "port": 32123,
+          "path": "/ws",
+          "auth_token": "desktop-auth-token-123456",
+          "message_auth_mode": "token",
+          "allowed_origins": ["*"]
+        }
+      }
+    }
+  },
+  "autonomy": {
+    "level": "supervised",
+    "workspace_only": true,
+    "max_actions_per_hour": 20,
+    "require_approval_for_medium_risk": true,
+    "block_high_risk_commands": false
+  },
+  "runtime": {
+    "kind": "host"
+  },
+  "scheduler": {
+    "enabled": true,
+    "max_tasks": 32,
+    "max_concurrent": 2,
+    "agent_timeout_secs": 300
+  },
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 32123,
+    "require_pairing": true
+  }
+}

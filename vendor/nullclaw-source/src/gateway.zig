@@ -33,6 +33,7 @@ const constantTimeEq = @import("security/pairing.zig").constantTimeEq;
 const channels = @import("channels/root.zig");
 const bus_mod = @import("bus.zig");
 const a2a = @import("a2a.zig");
+const desktop_api = @import("desktop_api.zig");
 const thread_stacks = @import("thread_stacks.zig");
 const channel_adapters = @import("channel_adapters.zig");
 const ConversationContext = @import("agent/prompt.zig").ConversationContext;
@@ -472,6 +473,7 @@ pub const GatewayState = struct {
     lark_allow_from: []const []const u8 = &.{},
     qq_channels: std.ArrayListUnmanaged(channels.qq.QQChannel) = .empty,
     pairing_guard: ?PairingGuard,
+    desktop_control_token: ?[]u8 = null,
     event_bus: ?*bus_mod.Bus = null,
 
     pub fn init(allocator: std.mem.Allocator) GatewayState {
@@ -500,6 +502,9 @@ pub const GatewayState = struct {
         self.idempotency.deinit(self.allocator);
         if (self.pairing_guard) |*guard| {
             guard.deinit();
+        }
+        if (self.desktop_control_token) |token| {
+            self.allocator.free(token);
         }
     }
 };
@@ -3752,6 +3757,8 @@ pub fn run(allocator: std.mem.Allocator, host: []const u8, port: u16, config_ptr
     }
     defer if (owned_config) |*c| c.deinit();
 
+    state.desktop_control_token = std.process.getEnvVarOwned(allocator, "NULLCLAW_DESKTOP_TOKEN") catch null;
+
     // Provider runtime bundle (primary + reliability wrapper) must outlive the accept loop.
     var provider_bundle_opt: ?providers.runtime_bundle.RuntimeProviderBundle = null;
     var session_mgr_opt: ?session_mod.SessionManager = null;
@@ -4108,6 +4115,24 @@ pub fn run(allocator: std.mem.Allocator, host: []const u8, port: u16, config_ptr
                     }
                 }
             }
+        } else if (std.mem.startsWith(u8, base_path, "/api/desktop/")) {
+            const auth_header = extractHeader(raw, "Authorization");
+            const bearer = if (auth_header) |ah| extractBearerToken(ah) else null;
+            const body = if (std.mem.eql(u8, method_str, "PUT") or std.mem.eql(u8, method_str, "POST"))
+                extractBody(raw)
+            else
+                null;
+            const desktop_response = desktop_api.handle(
+                req_allocator,
+                method_str,
+                base_path,
+                body,
+                bearer,
+                state.desktop_control_token,
+                config_opt,
+            );
+            response_status = desktop_response.status;
+            response_body = desktop_response.body;
         } else if (control_route_map.get(base_path)) |route| switch (route) {
             .health => {
                 response_body = if (isHealthOk()) "{\"status\":\"ok\"}" else "{\"status\":\"degraded\"}";
