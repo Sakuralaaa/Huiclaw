@@ -3,6 +3,7 @@ import { svelteTesting } from '@testing-library/svelte/vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig(({ mode }) => ({
+  base: './',
   plugins: [sveltekit(), mode === 'test' ? svelteTesting() : undefined],
   test: {
     environment: 'jsdom',

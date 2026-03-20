@@ -10,7 +10,7 @@
     "install:ui": "npm --prefix ui install",
     "build:runtime": "powershell -ExecutionPolicy Bypass -File ./scripts/build-runtime.ps1",
     "build:desktop": "tsup desktop/main.next.ts desktop/preload.ts --format cjs --platform node --target node20 --out-dir dist/desktop --clean --external electron",
-    "build:ui": "npm --prefix ui run build",
+    "build:ui": "npm --prefix ui run build && powershell -ExecutionPolicy Bypass -File ./scripts/fix-ui-for-electron.ps1",
     "build": "npm run build:desktop && npm run build:ui",
     "dev:ui": "npm --prefix ui run dev -- --host 127.0.0.1 --port 4173",
     "dev:desktop": "cross-env MYCLAW_RENDERER_URL=http://127.0.0.1:4173 tsup desktop/main.next.ts desktop/preload.ts --format cjs --platform node --target node20 --out-dir dist/desktop --watch --onSuccess \"electron .\" --external electron",
