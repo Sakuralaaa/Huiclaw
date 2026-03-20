@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
-import { request, type RequestOptions } from 'node:http';
+import { createServer, request, type IncomingMessage, type RequestOptions, type Server, type ServerResponse } from 'node:http';
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -36,6 +36,8 @@ const defaultSettings: AppSettings = {
 
 let mainWindow: BrowserWindow | null = null;
 let runtimeProc: ChildProcessWithoutNullStreams | null = null;
+let uiServer: Server | null = null;
+let uiServerUrl: string | null = null;
 let runtimeStatus: RuntimeStatus = {
   phase: 'idle',
   binaryFound: false,
@@ -112,6 +114,97 @@ function emptySummary(): DesktopSummary {
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function contentTypeFor(filePath: string) {
+  const ext = path.extname(filePath).toLowerCase();
+  switch (ext) {
+    case '.html':
+      return 'text/html; charset=utf-8';
+    case '.js':
+      return 'text/javascript; charset=utf-8';
+    case '.css':
+      return 'text/css; charset=utf-8';
+    case '.json':
+    case '.webmanifest':
+      return 'application/json; charset=utf-8';
+    case '.png':
+      return 'image/png';
+    case '.ico':
+      return 'image/x-icon';
+    case '.svg':
+      return 'image/svg+xml';
+    case '.txt':
+      return 'text/plain; charset=utf-8';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+function writeStaticResponse(res: ServerResponse<IncomingMessage>, status: number, body: string) {
+  res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end(body);
+}
+
+async function startUiServer(): Promise<string> {
+  if (uiServer && uiServerUrl) {
+    return uiServerUrl;
+  }
+
+  const uiRoot = path.join(projectRoot, 'ui', 'build');
+  const indexPath = path.join(uiRoot, 'index.html');
+
+  uiServer = createServer(async (req, res) => {
+    try {
+      const requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+      let relativePath = decodeURIComponent(requestUrl.pathname);
+      if (relativePath === '/' || relativePath.length === 0) {
+        relativePath = '/index.html';
+      }
+
+      const safePath = path.normalize(relativePath).replace(/^(\.\.[\\/])+/, '');
+      let filePath = path.join(uiRoot, safePath);
+
+      let shouldFallbackToIndex = false;
+      const stat = await fsp.stat(filePath).catch(() => null);
+      if (!stat) {
+        shouldFallbackToIndex = path.extname(filePath).length === 0;
+      } else if (stat.isDirectory()) {
+        filePath = path.join(filePath, 'index.html');
+      }
+
+      if (shouldFallbackToIndex) {
+        filePath = indexPath;
+      }
+
+      const exists = await fsp.stat(filePath).catch(() => null);
+      if (!exists || !exists.isFile()) {
+        writeStaticResponse(res, 404, 'Not Found');
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': contentTypeFor(filePath) });
+      fs.createReadStream(filePath).pipe(res);
+    } catch {
+      writeStaticResponse(res, 500, 'Internal Server Error');
+    }
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    uiServer!.once('error', reject);
+    uiServer!.listen(0, '127.0.0.1', () => {
+      uiServer!.off('error', reject);
+      resolve();
+    });
+  });
+
+  const address = uiServer.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('UI server failed to start');
+  }
+
+  uiServerUrl = `http://127.0.0.1:${address.port}/`;
+  return uiServerUrl;
 }
 
 async function detectEnvironment(paths: AppPaths): Promise<EnvironmentReport> {
@@ -317,7 +410,7 @@ async function createWindow() {
   if (isDev) {
     await mainWindow.loadURL(process.env.MYCLAW_RENDERER_URL!);
   } else {
-    await mainWindow.loadFile(path.join(projectRoot, 'ui', 'build', 'index.html'));
+    await mainWindow.loadURL(await startUiServer());
   }
 }
 
@@ -399,6 +492,11 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
+  if (uiServer) {
+    uiServer.close();
+    uiServer = null;
+    uiServerUrl = null;
+  }
   if (process.platform !== 'darwin') {
     app.quit();
   }
