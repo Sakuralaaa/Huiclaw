@@ -1,0 +1,60 @@
+{
+  "default_temperature": 0.5,
+  "models": {
+    "providers": {
+      "openrouter": {
+        "api_key": ""
+      },
+      "openai": {
+        "api_key": ""
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openrouter/anthropic/claude-sonnet-4"
+      }
+    },
+    "list": [
+      {
+        "id": "assistant-cn",
+        "model": {
+          "primary": "openrouter/anthropic/claude-sonnet-4"
+        },
+        "system_prompt": "请优先使用简体中文与用户沟通，解释清楚风险与执行结果。"
+      },
+      {
+        "id": "orchestrator",
+        "model": {
+          "primary": "openrouter/openai/gpt-5"
+        },
+        "system_prompt": "你是多代理协调者，负责分配任务并汇总结果。"
+      }
+    ]
+  },
+  "channels": {
+    "web": [
+      {
+        "account_id": "desktop",
+        "transport": "local",
+        "listen": "127.0.0.1",
+        "port": 32123,
+        "path": "/ws",
+        "message_auth_mode": "token",
+        "auth_token": "replace-me"
+      }
+    ]
+  },
+  "gateway": {
+    "host": "127.0.0.1",
+    "port": 32123,
+    "require_pairing": true
+  },
+  "autonomy": {
+    "level": "supervised",
+    "workspace_only": true,
+    "max_actions_per_hour": 20
+  }
+}
+

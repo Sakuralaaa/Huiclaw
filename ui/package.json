@@ -1,0 +1,61 @@
+{
+	"name": "nullclaw-chat-ui",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"bin": {
+		"nullclaw-chat-ui": "./bin/nullclaw-chat-ui.js"
+	},
+	"files": [
+		"bin",
+		"build",
+		"README.md"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"cli": "node ./bin/nullclaw-chat-ui.js",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepare": "svelte-kit sync || echo ''",
+		"prepack": "npm run build",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"build:module": "vite build --config vite.module.config.ts",
+		"bundle": "npm run build:module && tar -czf nullclaw-chat-ui-bundle.tar.gz -C dist ."
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-static": "^3.0.10",
+		"@sveltejs/kit": "^2.50.2",
+		"@sveltejs/vite-plugin-svelte": "^6.2.4",
+		"@testing-library/svelte": "^5.3.1",
+		"@testing-library/user-event": "^14.6.1",
+		"@types/marked": "^5.0.2",
+		"jsdom": "^28.1.0",
+		"svelte": "^5.51.0",
+		"svelte-check": "^4.3.6",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1",
+		"vitest": "^4.0.18"
+	},
+	"exports": {
+		"./components/*": "./src/lib/components/*",
+		"./protocol/*": "./src/lib/protocol/*",
+		"./session/*": "./src/lib/session/*",
+		"./stores/*": "./src/lib/stores/*",
+		"./theme": "./src/lib/theme.ts",
+		"./ui/*": "./src/lib/ui/*"
+	},
+	"svelte": "./src/lib/index.ts",
+	"dependencies": {
+		"@noble/ciphers": "^2.1.1",
+		"highlight.js": "^11.11.1",
+		"isomorphic-dompurify": "^3.0.0",
+		"marked": "^17.0.3",
+		"marked-highlight": "^2.2.3"
+	}
+}

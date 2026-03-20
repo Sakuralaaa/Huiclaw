@@ -1,0 +1,75 @@
+{
+  "name": "myclaw",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MyClaw - 中文优先的 NullClaw 一体化桌面控制台",
+  "main": "dist/desktop/main.cjs",
+  "author": "MyClaw",
+  "scripts": {
+    "install:ui": "npm --prefix ui install",
+    "build:runtime": "powershell -ExecutionPolicy Bypass -File ./scripts/build-runtime.ps1",
+    "build:desktop": "tsup desktop/main.ts desktop/preload.ts --format cjs --platform node --target node20 --out-dir dist/desktop --clean",
+    "build:ui": "npm --prefix ui run build",
+    "build": "npm run build:desktop && npm run build:ui",
+    "dev:ui": "npm --prefix ui run dev -- --host 127.0.0.1 --port 4173",
+    "dev:desktop": "cross-env MYCLAW_RENDERER_URL=http://127.0.0.1:4173 tsup desktop/main.ts desktop/preload.ts --format cjs --platform node --target node20 --out-dir dist/desktop --watch --onSuccess \"electron .\"",
+    "dev": "concurrently -k -n ui,desktop \"npm run dev:ui\" \"wait-on tcp:4173 && npm run dev:desktop\"",
+    "pack": "npm run build && electron-builder --dir",
+    "dist:win": "npm run build && electron-builder --win nsis portable",
+    "lint": "npm run build:desktop",
+    "verify": "npm run build",
+    "sync:runtime": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-runtime.ps1",
+    "sync:upstream": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-upstream.ps1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.0.0",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "wait-on": "^8.0.5"
+  },
+  "build": {
+    "appId": "io.huiclaw.myclaw",
+    "productName": "MyClaw",
+    "directories": {
+      "output": "release",
+      "buildResources": "installer/resources"
+    },
+    "files": [
+      "dist/desktop/**/*",
+      "ui/build/**/*",
+      "runtime/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "dist/desktop/main.cjs"
+    },
+    "asar": true,
+    "extraResources": [
+      {
+        "from": "runtime",
+        "to": "runtime"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "artifactName": "MyClaw-setup-${version}-${arch}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "MyClaw-portable-${version}-${arch}.${ext}"
+    }
+  }
+}

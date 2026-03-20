@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install UI dependencies
+        run: npm run install:ui
+
+      - name: Build bundled runtime
+        run: npm run build:runtime
+
+      - name: Build desktop and UI
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: myclaw-build
+          path: |
+            dist
+            ui/build
+            runtime/bin/nullclaw.exe

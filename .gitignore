@@ -1,0 +1,16 @@
+node_modules/
+dist/
+release/
+.electron-cache/
+.vite/
+coverage/
+tmp/
+runtime/logs/
+runtime/home/
+runtime/workspace/
+ui/.svelte-kit/
+ui/build/
+ui/node_modules/
+ui-base/
+desktop/out/
+*.log
