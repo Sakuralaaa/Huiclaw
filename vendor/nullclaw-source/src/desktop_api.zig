@@ -86,7 +86,11 @@ pub fn handle(
     }
     if (std.mem.eql(u8, base_path, "/api/desktop/config")) {
         if (std.mem.eql(u8, method, "GET")) {
-            const raw = std.fs.readFileAbsoluteAlloc(allocator, cfg.config_path, 2 * 1024 * 1024) catch {
+            const file = std.fs.openFileAbsolute(cfg.config_path, .{}) catch {
+                return .{ .status = "500 Internal Server Error", .body = "{\"error\":\"config read failed\"}" };
+            };
+            defer file.close();
+            const raw = file.readToEndAlloc(allocator, 2 * 1024 * 1024) catch {
                 return .{ .status = "500 Internal Server Error", .body = "{\"error\":\"config read failed\"}" };
             };
             return .{ .status = "200 OK", .body = raw };
