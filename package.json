@@ -16,7 +16,7 @@
     "dev:desktop": "cross-env MYCLAW_RENDERER_URL=http://127.0.0.1:4173 tsup desktop/main.next.ts desktop/preload.ts --format cjs --platform node --target node20 --out-dir dist/desktop --watch --onSuccess \"electron .\"",
     "dev": "concurrently -k -n ui,desktop \"npm run dev:ui\" \"wait-on tcp:4173 && npm run dev:desktop\"",
     "pack": "npm run build && electron-builder --dir",
-    "dist:win": "npm run build && electron-builder --win nsis portable",
+    "dist:win": "npm run build && electron-builder --win nsis portable --publish never",
     "lint": "npm run build:desktop",
     "verify": "npm run build",
     "sync:runtime": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-runtime.ps1",
